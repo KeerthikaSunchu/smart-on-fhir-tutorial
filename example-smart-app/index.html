@@ -1,170 +1,101 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta http-equiv='X-UA-Compatible' content='IE=edge' />
+    <meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
     <title>Example-SMART-App</title>
+
+    <link rel='stylesheet' type='text/css' href='./src/css/example-smart-app.css'>
+    <!--
+      Temporarily disable cerner-smart-embeddable-lib
+      <link rel='stylesheet' type='text/css' href='./lib/css/cerner-smart-embeddable-lib-1.0.0.min.css'>
+    -->
   </head>
   <body>
-    <h2>SMART on FHIR Starter App</h2>
-    <div id="errors"></div>
-    <div id="loading">Loading...</div>
-    <div id="holder" style="display:none;">
+    <div id='errors'>
+    </div>
+    <div id="loading" class="spinner">
+      <div class="bounce1"></div>
+      <div class="bounce2"></div>
+      <div class="bounce3"></div>
+    </div>
+    <div id='holder' >
+      <h2>Example-SMART-App</h2>
+
       <h2>Patient Resource</h2>
       <table>
         <tr>
           <th>First Name:</th>
-          <td id="fname"></td>
+          <td id='fname'></td>
         </tr>
         <tr>
           <th>Last Name:</th>
-          <td id="lname"></td>
+          <td id='lname'></td>
         </tr>
         <tr>
           <th>Gender:</th>
-          <td id="gender"></td>
+          <td id='gender'></td>
         </tr>
         <tr>
           <th>Date of Birth:</th>
-          <td id="birthdate"></td>
-        </tr>
-        <tr>
-          <th>Age:</th>
-          <td id="age"></td>
+          <td id='birthdate'></td>
         </tr>
       </table>
       <h2>Observation Resource</h2>
       <table>
         <tr>
           <th>Height:</th>
-          <td id="height"></td>
+          <td id='height'></td>
         </tr>
         <tr>
           <th>Systolic Blood Pressure:</th>
-          <td id="systolicbp"></td>
+          <td id='systolicbp'></td>
+
         </tr>
         <tr>
           <th>Diastolic Blood Pressure:</th>
-          <td id="diastolicbp"></td>
+          <td id='diastolicbp'></td>
         </tr>
         <tr>
           <th>LDL:</th>
-          <td id="ldl"></td>
+          <td id='ldl'></td>
         </tr>
         <tr>
           <th>HDL:</th>
-          <td id="hdl"></td>
+          <td id='hdl'></td>
         </tr>
       </table>
     </div>
-    <script src="node_modules/fhirclient/build/fhir-client.js"></script>
-    <script src="node_modules/jquery/dist/jquery.min.js"></script>
+    <!-- Required JS files to enable this page to embed within an MPage -->
+    <!--
+      Temporarily disable cerner-smart-embeddable-lib
+      <script src='https://cdnjs.cloudflare.com/ajax/libs/babel-polyfill/6.26.0/polyfill.min.js'></script>
+      <script src='./lib/js/cerner-smart-embeddable-lib-1.0.0.min.js'></script>
+    -->
+
+    <!-- Application-level javascript-->
+    <script src='./src/js/example-smart-app.js'></script>
+
+    <!-- FHIR Client JS Library -->
+    <script src='./lib/js/fhir-client-v0.1.12.js'></script>
+
+    <!-- Prevent session bleed caused by single threaded embedded browser and sessionStorage API -->
+    <!-- https://github.com/cerner/fhir-client-cerner-additions -->
+    <script src='./lib/js/fhir-client-cerner-additions-1.0.0.js'></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
     <script>
-      function drawVisualization(p) {
-        $("#holder").show();
-        $("#loading").hide();
-        $("#fname").html(p.fname);
-        $("#lname").html(p.lname);
-        $("#gender").html(p.gender);
-        $("#birthdate").html(p.birthdate);
-        $("#age").html(p.age);
-        $("#height").html(p.height);
-        $("#systolicbp").html(p.systolicbp);
-        $("#diastolicbp").html(p.diastolicbp);
-        $("#ldl").html(p.ldl);
-        $("#hdl").html(p.hdl);
-      }
+      extractData().then(
+        //Display Patient Demographics and Observations if extractData was success
+        function(p) {
+          drawVisualization(p);
+        },
 
-      function defaultPatient() {
-        return {
-          fname: "",
-          lname: "",
-          gender: "",
-          birthdate: "",
-          age: "",
-          height: "",
-          systolicbp: "",
-          diastolicbp: "",
-          ldl: "",
-          hdl: "",
-        };
-      }
-
-      function getBloodPressureValue(bpObservations, typeOfPressure) {
-        var formattedBPObservations = [];
-        bpObservations.forEach(function(observation) {
-          var bp = observation.component.find(function(component) {
-            return component.code.coding.find(function(coding) {
-              return coding.code == typeOfPressure;
-            });
-          });
-          if (bp) {
-            observation.valueQuantity = bp.valueQuantity;
-            formattedBPObservations.push(observation);
-          }
-        });
-        return formattedBPObservations.length > 0 ? formattedBPObservations[0].valueQuantity.value : undefined;
-      }
-
-      window.extractData = function() {
-        var ret = $.Deferred();
-        FHIR.oauth2.ready().then(function(client) {
-          var patient = client.patient.read();
-          var obv = client.request("Observation", {
-            flat: true,
-            query: {
-              code: [
-                "http://loinc.org|8302-2",
-                "http://loinc.org|8462-4",
-                "http://loinc.org|8480-6",
-                "http://loinc.org|2085-9",
-                "http://loinc.org|2089-1",
-                "http://loinc.org|55284-4",
-              ].join(","),
-            },
-          });
-
-          $.when(patient, obv).fail(function() {
-            ret.reject();
-          });
-
-          $.when(patient, obv).done(function(patient, obv) {
-            var byCodes = client.byCodes(obv, "code");
-            var gender = patient.gender;
-            var dob = new Date(patient.birthDate);
-            var day = dob.getDate();
-            var monthIndex = dob.getMonth() + 1;
-            var year = dob.getFullYear();
-            var dobStr = monthIndex + "/" + day + "/" + year;
-            var fname = patient.name[0]?.given.join(" ") || "";
-            var lname = patient.name[0]?.family.join(" ") || "";
-            var height = byCodes("8302-2");
-            var systolicbp = getBloodPressureValue(byCodes("55284-4"), "8480-6");
-            var diastolicbp = getBloodPressureValue(byCodes("55284-4"), "8462-4");
-            var hdl = byCodes("2085-9");
-            var ldl = byCodes("2089-1");
-
-            var p = defaultPatient();
-            p.birthdate = dobStr;
-            p.gender = gender;
-            p.fname = fname;
-            p.lname = lname;
-            p.age = parseInt((new Date() - dob) / (365.25 * 24 * 60 * 60 * 1000));
-            p.height = height[0]?.valueQuantity?.value + " " + height[0]?.valueQuantity?.unit || "";
-            p.systolicbp = systolicbp;
-            p.diastolicbp = diastolicbp;
-            p.hdl = hdl[0]?.valueQuantity?.value + " " + hdl[0]?.valueQuantity?.unit || "";
-            p.ldl = ldl[0]?.valueQuantity?.value + " " + ldl[0]?.valueQuantity?.unit || "";
-
-            ret.resolve(p);
-          });
-        });
-        return ret.promise();
-      };
-
-      extractData().then(drawVisualization, function() {
-        $("#errors").html("<p>Failed to call FHIR Service</p>");
-      });
+        //Display 'Failed to call FHIR Service' if extractData failed
+        function() {
+          $('#loading').hide();
+          $('#errors').html('<p> Failed to call FHIR Service </p>');
+        }
+      );
     </script>
   </body>
 </html>
