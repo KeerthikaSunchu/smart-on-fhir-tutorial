@@ -6,6 +6,8 @@
     <title>Example-SMART-App</title>
 
     <link rel='stylesheet' type='text/css' href='./src/css/example-smart-app.css'>
+    <!-- Temporarily disable cerner-smart-embeddable-lib -->
+    <!-- <link rel='stylesheet' type='text/css' href='./lib/css/cerner-smart-embeddable-lib-1.0.0.min.css'> -->
 </head>
 <body>
     <div id='errors'></div>
@@ -61,31 +63,39 @@
         </table>
     </div>
 
+    <!-- Application-level JavaScript -->
+    <script src='./src/js/example-smart-app.js'></script>
+
+    <!-- FHIR Client JS Library -->
     <script src="https://cdn.jsdelivr.net/npm/fhirclient@latest/build/fhir-client.min.js"></script>
+
+    <!-- jQuery for AJAX calls -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
 
     <script>
-        FHIR.oauth2.ready().then(function(client) {
-            return client.request("Patient").then(function(patient) {
-                document.getElementById("loading").style.display = "none";
-                document.getElementById("holder").style.display = "block";
-                
-                if (patient.name && patient.name[0]) {
-                    document.getElementById("fname").textContent = patient.name[0].given ? patient.name[0].given.join(' ') : 'N/A';
-                    document.getElementById("lname").textContent = patient.name[0].family ? patient.name[0].family : 'N/A';
-                } else {
-                    document.getElementById("fname").textContent = 'N/A';
-                    document.getElementById("lname").textContent = 'N/A';
-                }
+        document.addEventListener("DOMContentLoaded", function() {
+            FHIR.oauth2.ready().then(function(client) {
+                return client.request("Patient").then(function(patient) {
+                    document.getElementById("loading").style.display = "none";
+                    document.getElementById("holder").style.display = "block";
 
-                document.getElementById("gender").textContent = patient.gender ? patient.gender : 'N/A';
-                document.getElementById("birthdate").textContent = patient.birthDate ? patient.birthDate : 'N/A';
-                document.getElementById("age").textContent = patient.birthDate ? new Date().getFullYear() - new Date(patient.birthDate).getFullYear() : 'N/A';
+                    if (patient.name && patient.name[0]) {
+                        document.getElementById("fname").textContent = patient.name[0].given ? patient.name[0].given.join(' ') : 'N/A';
+                        document.getElementById("lname").textContent = patient.name[0].family ? patient.name[0].family : 'N/A';
+                    } else {
+                        document.getElementById("fname").textContent = 'N/A';
+                        document.getElementById("lname").textContent = 'N/A';
+                    }
+
+                    document.getElementById("gender").textContent = patient.gender ? patient.gender : 'N/A';
+                    document.getElementById("birthdate").textContent = patient.birthDate ? patient.birthDate : 'N/A';
+                    document.getElementById("age").textContent = patient.birthDate ? new Date().getFullYear() - new Date(patient.birthDate).getFullYear() : 'N/A';
+                });
+            }).catch(function(error) {
+                console.error('Error during FHIR request:', error);
+                document.getElementById("loading").style.display = "none";
+                document.getElementById("errors").innerHTML = '<p> Failed to call FHIR Service </p>';
             });
-        }).catch(function(error) {
-            console.error(error);
-            document.getElementById("loading").style.display = "none";
-            document.getElementById("errors").innerHTML = '<p> Failed to call FHIR Service </p>';
         });
     </script>
 </body>
