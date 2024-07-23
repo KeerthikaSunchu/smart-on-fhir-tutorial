@@ -1,101 +1,94 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
     <meta http-equiv='X-UA-Compatible' content='IE=edge' />
     <meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
     <title>Example-SMART-App</title>
 
     <link rel='stylesheet' type='text/css' href='./src/css/example-smart-app.css'>
-    <!--
-      Temporarily disable cerner-smart-embeddable-lib
-      <link rel='stylesheet' type='text/css' href='./lib/css/cerner-smart-embeddable-lib-1.0.0.min.css'>
-    -->
-  </head>
-  <body>
-    <div id='errors'>
-    </div>
+    <!-- Temporarily disable cerner-smart-embeddable-lib -->
+    <!-- <link rel='stylesheet' type='text/css' href='./lib/css/cerner-smart-embeddable-lib-1.0.0.min.css'> -->
+</head>
+<body>
+    <div id='errors'></div>
     <div id="loading" class="spinner">
-      <div class="bounce1"></div>
-      <div class="bounce2"></div>
-      <div class="bounce3"></div>
+        <div class="bounce1"></div>
+        <div class="bounce2"></div>
+        <div class="bounce3"></div>
     </div>
-    <div id='holder' >
-      <h2>Example-SMART-App</h2>
+    <div id='holder' style="display:none;">
+        <h2>Example-SMART-App</h2>
 
-      <h2>Patient Resource</h2>
-      <table>
-        <tr>
-          <th>First Name:</th>
-          <td id='fname'></td>
-        </tr>
-        <tr>
-          <th>Last Name:</th>
-          <td id='lname'></td>
-        </tr>
-        <tr>
-          <th>Gender:</th>
-          <td id='gender'></td>
-        </tr>
-        <tr>
-          <th>Date of Birth:</th>
-          <td id='birthdate'></td>
-        </tr>
-      </table>
-      <h2>Observation Resource</h2>
-      <table>
-        <tr>
-          <th>Height:</th>
-          <td id='height'></td>
-        </tr>
-        <tr>
-          <th>Systolic Blood Pressure:</th>
-          <td id='systolicbp'></td>
-
-        </tr>
-        <tr>
-          <th>Diastolic Blood Pressure:</th>
-          <td id='diastolicbp'></td>
-        </tr>
-        <tr>
-          <th>LDL:</th>
-          <td id='ldl'></td>
-        </tr>
-        <tr>
-          <th>HDL:</th>
-          <td id='hdl'></td>
-        </tr>
-      </table>
+        <h2>Patient Resource</h2>
+        <table>
+            <tr>
+                <th>First Name:</th>
+                <td id='fname'></td>
+            </tr>
+            <tr>
+                <th>Last Name:</th>
+                <td id='lname'></td>
+            </tr>
+            <tr>
+                <th>Gender:</th>
+                <td id='gender'></td>
+            </tr>
+            <tr>
+                <th>Date of Birth:</th>
+                <td id='birthdate'></td>
+            </tr>
+        </table>
+        <h2>Observation Resource</h2>
+        <table>
+            <tr>
+                <th>Height:</th>
+                <td id='height'></td>
+            </tr>
+            <tr>
+                <th>Systolic Blood Pressure:</th>
+                <td id='systolicbp'></td>
+            </tr>
+            <tr>
+                <th>Diastolic Blood Pressure:</th>
+                <td id='diastolicbp'></td>
+            </tr>
+            <tr>
+                <th>LDL:</th>
+                <td id='ldl'></td>
+            </tr>
+            <tr>
+                <th>HDL:</th>
+                <td id='hdl'></td>
+            </tr>
+        </table>
     </div>
-    <!-- Required JS files to enable this page to embed within an MPage -->
-    <!--
-      Temporarily disable cerner-smart-embeddable-lib
-      <script src='https://cdnjs.cloudflare.com/ajax/libs/babel-polyfill/6.26.0/polyfill.min.js'></script>
-      <script src='./lib/js/cerner-smart-embeddable-lib-1.0.0.min.js'></script>
-    -->
 
-    <!-- Application-level javascript-->
+    <!-- Application-level JavaScript -->
     <script src='./src/js/example-smart-app.js'></script>
 
     <!-- FHIR Client JS Library -->
-    <script src='./lib/js/fhir-client-v0.1.12.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/fhirclient@latest/build/fhir-client.min.js"></script>
 
-    <!-- Prevent session bleed caused by single threaded embedded browser and sessionStorage API -->
-    <!-- https://github.com/cerner/fhir-client-cerner-additions -->
-    <script src='./lib/js/fhir-client-cerner-additions-1.0.0.js'></script>
+    <!-- jQuery for AJAX calls -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
-    <script>
-      extractData().then(
-        //Display Patient Demographics and Observations if extractData was success
-        function(p) {
-          drawVisualization(p);
-        },
 
-        //Display 'Failed to call FHIR Service' if extractData failed
-        function() {
-          $('#loading').hide();
-          $('#errors').html('<p> Failed to call FHIR Service </p>');
-        }
-      );
+    <script>
+        // The extractData function should be defined in example-smart-app.js
+        FHIR.oauth2.ready().then(function(client) {
+            return client.request("Patient").then(function(patient) {
+                document.getElementById("loading").style.display = "none";
+                document.getElementById("holder").style.display = "block";
+                document.getElementById("fname").textContent = patient.name[0].given.join(' ');
+                document.getElementById("lname").textContent = patient.name[0].family.join(' ');
+                document.getElementById("gender").textContent = patient.gender;
+                document.getElementById("birthdate").textContent = patient.birthDate;
+                document.getElementById("age").textContent = new Date().getFullYear() - new Date(patient.birthDate).getFullYear();
+            });
+        }).catch(function(error) {
+            console.error(error);
+            document.getElementById("loading").style.display = "none";
+            document.getElementById("errors").innerHTML = '<p> Failed to call FHIR Service </p>';
+        });
     </script>
-  </body>
+</body>
 </html>
