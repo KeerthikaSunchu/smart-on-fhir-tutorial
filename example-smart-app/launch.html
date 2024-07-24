@@ -25,6 +25,7 @@
     <!-- https://github.com/cerner/fhir-client-cerner-additions -->
     <script src='./lib/js/fhir-client-cerner-additions-1.0.0.js'></script>
     <script>
+      import FHIR from "fhirclient"
       FHIR.oauth2.authorize({
         'client_id': '5463aebd-19b7-4311-bcd4-e77c46793d77',
         'scope':  'patient/*.read'
