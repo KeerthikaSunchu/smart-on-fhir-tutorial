@@ -1,21 +1,18 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
-import './index.css';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import App from './App';
-import FHIR from 'fhirclient';
-
-const rootElement = document.getElementById('root');
-
-const smartLaunch = () => {
-  FHIR.oauth2
-    .init({
-      clientId: '20560ea5-f224-4658-b667-4e6bab935c85',
-      scope: 'launch/patient openid profile patient/Observation.read'
-    })
-    .then(client => {
-      ReactDOM.render(<App client={client} />, rootElement);
-    });
-};
-
-smartLaunch();
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>Example-SMART-App</title>
+  </head>
+  <body>
+    <script src="./lib/fhir-client.js"></script>
+    <script>
+      FHIR.oauth2.authorize({
+        client_id: 'YOUR_CLIENT_ID',
+        scope: 'patient/Patient.read patient/Observation.read launch online_access openid profile',
+        iss: 'https://r4.smarthealthit.org'
+      });
+    </script>
+  </body>
+</html>
