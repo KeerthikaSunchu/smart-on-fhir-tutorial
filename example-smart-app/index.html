@@ -12,14 +12,13 @@
     -->
   </head>
   <body>
-    <div id='errors'>
-    </div>
+    <div id='errors'></div>
     <div id="loading" class="spinner">
       <div class="bounce1"></div>
       <div class="bounce2"></div>
       <div class="bounce3"></div>
     </div>
-    <div id='holder' >
+    <div id='holder'>
       <h2>Example-SMART-App</h2>
 
       <h2>Patient Resource</h2>
@@ -50,7 +49,6 @@
         <tr>
           <th>Systolic Blood Pressure:</th>
           <td id='systolicbp'></td>
-
         </tr>
         <tr>
           <th>Diastolic Blood Pressure:</th>
@@ -84,18 +82,73 @@
     <script src='./lib/js/fhir-client-cerner-additions-1.0.0.js'></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
     <script>
-      extractData().then(
-        //Display Patient Demographics and Observations if extractData was success
-        function(p) {
-          drawVisualization(p);
-        },
-
-        //Display 'Failed to call FHIR Service' if extractData failed
-        function() {
+      FHIR.oauth2.ready()
+        .then(client => {
+          // Fetch patient data
+          return client.request("Patient").then(patient => {
+            displayPatient(patient);
+            return client;
+          });
+        })
+        .then(client => {
+          // Fetch observation data
+          const query = new URLSearchParams();
+          query.set("patient", client.patient.id);
+          query.set("code", [
+            "http://loinc.org|8302-2",    // Height
+            "http://loinc.org|8462-4",    // Diastolic Blood Pressure
+            "http://loinc.org|8480-6",    // Systolic Blood Pressure
+            "http://loinc.org|2085-9",    // HDL
+            "http://loinc.org|2089-1"     // LDL
+          ].join(","));
+          return client.request(`Observation?${query}`).then(observations => {
+            displayObservations(observations);
+          });
+        })
+        .catch(error => {
           $('#loading').hide();
           $('#errors').html('<p> Failed to call FHIR Service </p>');
+          console.error(error);
+        });
+
+      function displayPatient(patient) {
+        $('#fname').html(patient.name[0].given.join(" "));
+        $('#lname').html(patient.name[0].family);
+        $('#gender').html(patient.gender);
+        $('#birthdate').html(patient.birthDate);
+      }
+
+      function displayObservations(observations) {
+        const byCode = observations.entry.reduce((acc, obs) => {
+          const code = obs.resource.code.coding[0].code;
+          acc[code] = acc[code] || [];
+          acc[code].push(obs.resource);
+          return acc;
+        }, {});
+
+        $('#height').html(getQuantityValueAndUnit(byCode["8302-2"][0]));
+        $('#systolicbp').html(getBloodPressureValue(byCode["8480-6"], "8480-6"));
+        $('#diastolicbp').html(getBloodPressureValue(byCode["8462-4"], "8462-4"));
+        $('#ldl').html(getQuantityValueAndUnit(byCode["2089-1"][0]));
+        $('#hdl').html(getQuantityValueAndUnit(byCode["2085-9"][0]));
+      }
+
+      function getBloodPressureValue(BPObservations, typeOfPressure) {
+        const BP = BPObservations.find(obs => {
+          return obs.component.some(component => component.code.coding.some(coding => coding.code === typeOfPressure));
+        });
+        if (BP) {
+          const BPComponent = BP.component.find(component => component.code.coding.some(coding => coding.code === typeOfPressure));
+          return getQuantityValueAndUnit(BPComponent.valueQuantity);
         }
-      );
+      }
+
+      function getQuantityValueAndUnit(quantity) {
+        if (quantity && quantity.value && quantity.unit) {
+          return `${quantity.value} ${quantity.unit}`;
+        }
+        return "Unavailable";
+      }
     </script>
   </body>
 </html>
