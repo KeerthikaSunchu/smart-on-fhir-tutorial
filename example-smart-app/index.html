@@ -1,101 +1,87 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta http-equiv='X-UA-Compatible' content='IE=edge' />
-    <meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
-    <title>Example-SMART-App</title>
+import React, { useState, useEffect } from 'react';
+import { PatientVisualizer } from 'fhir-visualizers';
+import { Line } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
+import { Container, Button, Form } from "react-bootstrap";
+import 'bootstrap/dist/css/bootstrap.min.css';
+import { useForm } from "react-hook-form";
 
-    <link rel='stylesheet' type='text/css' href='./src/css/example-smart-app.css'>
-    <!--
-      Temporarily disable cerner-smart-embeddable-lib
-      <link rel='stylesheet' type='text/css' href='./lib/css/cerner-smart-embeddable-lib-1.0.0.min.css'>
-    -->
-  </head>
-  <body>
-    <div id='errors'>
+// Register the required components for Chart.js
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+
+export default function App(props) {
+  const client = props.client;
+  const [patient, setPatient] = useState(null);
+  const [observations, setObservations] = useState([]);
+  const { register, handleSubmit, formState: { errors } } = useForm();
+
+  useEffect(() => {
+    client.patient.read().then((patient) => setPatient(patient));
+    client.request("Observation?patient=" + client.patient.id)
+      .then((response) => {
+        const heightWeightObservations = response.entry.filter(entry =>
+          entry.resource.code.coding.some(coding => 
+            coding.code === '8302-2' || // Height
+            coding.code === '29463-7' // Weight
+          )
+        );
+        setObservations(heightWeightObservations);
+      });
+  }, [client]);
+
+  const onSubmit = data => {
+    let np = patient;
+    np.name[0].given[0] = data.fname;
+    np.name[0].family = data.lname;
+    setPatient(np);
+    client.update(np);
+  };
+
+  const chartData = {
+    labels: observations.map(obs => new Date(obs.resource.effectiveDateTime).toLocaleDateString()),
+    datasets: [
+      {
+        label: 'Height (cm)',
+        data: observations.filter(obs => obs.resource.code.coding.some(c => c.code === '8302-2')).map(obs => obs.resource.valueQuantity.value),
+        borderColor: 'rgba(75,192,192,1)',
+        fill: false,
+      },
+      {
+        label: 'Weight (kg)',
+        data: observations.filter(obs => obs.resource.code.coding.some(c => c.code === '29463-7')).map(obs => obs.resource.valueQuantity.value),
+        borderColor: 'rgba(192,75,75,1)',
+        fill: false,
+      }
+    ]
+  };
+
+  return (
+    <div id="app">
+      {patient ? (
+        <>
+          <PatientVisualizer patient={patient} />
+          <Container>
+            <h4>Update Patient Name</h4>
+            <Form onSubmit={handleSubmit(onSubmit)}>
+              <Form.Group className="mb-3" controlId="formFirst">
+                <Form.Label>First</Form.Label>
+                <Form.Control type="text" {...register("fname")} defaultValue={patient.name[0].given.join(' ')} />
+              </Form.Group>
+              <Form.Group className="mb-3" controlId="formLast">
+                <Form.Label>Last</Form.Label>
+                <Form.Control type="text" {...register("lname")} defaultValue={patient.name[0].family} />
+              </Form.Group>
+              <Button type="submit">Update</Button>
+            </Form>
+          </Container>
+          <Container>
+            <h4>Height and Weight Over Time</h4>
+            <Line data={chartData} />
+          </Container>
+        </>
+      ) : (
+        <h1>Loading</h1>
+      )}
     </div>
-    <div id="loading" class="spinner">
-      <div class="bounce1"></div>
-      <div class="bounce2"></div>
-      <div class="bounce3"></div>
-    </div>
-    <div id='holder' >
-      <h2>Example-SMART-App</h2>
-
-      <h2>Patient Resource</h2>
-      <table>
-        <tr>
-          <th>First Name:</th>
-          <td id='fname'></td>
-        </tr>
-        <tr>
-          <th>Last Name:</th>
-          <td id='lname'></td>
-        </tr>
-        <tr>
-          <th>Gender:</th>
-          <td id='gender'></td>
-        </tr>
-        <tr>
-          <th>Date of Birth:</th>
-          <td id='birthdate'></td>
-        </tr>
-      </table>
-      <h2>Observation Resource</h2>
-      <table>
-        <tr>
-          <th>Height:</th>
-          <td id='height'></td>
-        </tr>
-        <tr>
-          <th>Systolic Blood Pressure:</th>
-          <td id='systolicbp'></td>
-
-        </tr>
-        <tr>
-          <th>Diastolic Blood Pressure:</th>
-          <td id='diastolicbp'></td>
-        </tr>
-        <tr>
-          <th>LDL:</th>
-          <td id='ldl'></td>
-        </tr>
-        <tr>
-          <th>HDL:</th>
-          <td id='hdl'></td>
-        </tr>
-      </table>
-    </div>
-    <!-- Required JS files to enable this page to embed within an MPage -->
-    <!--
-      Temporarily disable cerner-smart-embeddable-lib
-      <script src='https://cdnjs.cloudflare.com/ajax/libs/babel-polyfill/6.26.0/polyfill.min.js'></script>
-      <script src='./lib/js/cerner-smart-embeddable-lib-1.0.0.min.js'></script>
-    -->
-
-    <!-- Application-level javascript-->
-    <script src='./src/js/example-smart-app.js'></script>
-
-    <!-- FHIR Client JS Library -->
-    <script src='./lib/js/fhir-client-v0.1.12.js'></script>
-
-    <!-- Prevent session bleed caused by single threaded embedded browser and sessionStorage API -->
-    <!-- https://github.com/cerner/fhir-client-cerner-additions -->
-    <script src='./lib/js/fhir-client-cerner-additions-1.0.0.js'></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
-    <script>
-      extractData().then(
-        //Display Patient Demographics and Observations if extractData was success
-        function(p) {
-          drawVisualization(p);
-        },
-
-        //Display 'Failed to call FHIR Service' if extractData failed
-        function() {
-          $('#loading').hide();
-          $('#errors').html('<p> Failed to call FHIR Service </p>');
-        }
-      );
-    </script>
-  </body>
-</html>
+  );
+}
