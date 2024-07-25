@@ -63,6 +63,12 @@
     <!-- Your custom script -->
     <script src="./src/js/example-smart-app.js"></script>
     <script>
+        FHIR.oauth2.authorize({
+            client_id: '5463aebd-19b7-4311-bcd4-e77c46793d77',
+            scope: 'patient/Patient.read patient/Observation.read launch online_access openid profile',
+            iss: 'https://r4.smarthealthit.org'
+        });
+        
         function extractData() {
             var ret = $.Deferred();
             FHIR.oauth2.ready(function(smart) {
