@@ -1,22 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-<<<<<<< HEAD
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Example-SMART-App</title>
-</head>
-<body>
-    <script src="node_modules/fhirclient/build/fhir-client.js"></script>
-    <script>
-        FHIR.oauth2.authorize({
-            client_id: "91b5e9a1-d744-43ec-8d2a-07d41915e78a",
-            scope: "patient/*.read",
-            iss: "https://r4.smarthealthit.org"
-        });
-    </script>
-</body>
-=======
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -43,7 +26,7 @@
     <script src='./lib/js/fhir-client-cerner-additions-1.0.0.js'></script>
     <script>
       FHIR.oauth2.authorize({
-        'client_id': '666462c0-d9f4-4086-992f-10f0be07d49e',
+        'client_id': '<enter your client id here>',
         'scope':  'patient/Patient.read patient/Observation.read launch online_access openid profile'
       });
     </script>
@@ -53,5 +36,4 @@
       <div class="bounce3"></div>
     </div>
   </body>
->>>>>>> 8d44b1b15317ca48ecceeedfbdfbf280494739d5
 </html>
