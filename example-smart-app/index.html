@@ -73,7 +73,9 @@
       // Function to extract data
       async function extractData() {
         try {
-          const client = await FHIR.oauth2.ready();
+          const client = await FHIR.oauth2.ready({
+            serverUrl: 'https://fhir-open.cerner.com/r4/ec2458f2-1e24-41c8-b71b-0e701af7583d'
+          });
           const patient = await client.request("Patient");
           const observation = await client.request("Observation?patient=" + patient.id);
 
