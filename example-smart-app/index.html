@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta http-equiv='X-UA-Compatible' content='IE=edge' />
-    <meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
-    <title>Example-SMART-App</title>
-
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <link rel='stylesheet' type='text/css' href='./src/css/example-smart-app.css'>
+    <title>Example-SMART-App</title>
   </head>
   <body>
     <div id='errors'></div>
@@ -80,7 +79,7 @@
 
           return { patient, observation };
         } catch (error) {
-          console.error(error);
+          console.error("Error calling FHIR service:", error);
           throw new Error("Failed to call FHIR Service");
         }
       }
