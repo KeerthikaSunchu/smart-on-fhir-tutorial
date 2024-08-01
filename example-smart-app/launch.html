@@ -14,8 +14,9 @@
     <script>
       FHIR.oauth2.authorize({
         client_id: '91b5e9a1-d744-43ec-8d2a-07d41915e78a',
-        scope: 'launch/patient openid profile patient/Observation.read',
-        serverUrl: 'https://fhir-open.cerner.com/r4/ec2458f2-1e24-41c8-b71b-0e701af7583d'
+        scope: 'launch/patient patient/*.read',
+        redirectUri: 'index.html',
+        iss: 'https://r4.smarthealthit.org',
       });
     </script>
 
