@@ -14,7 +14,7 @@
     <script>
       FHIR.oauth2.authorize({
         client_id: '91b5e9a1-d744-43ec-8d2a-07d41915e78a',
-        scope: 'launch/patient patient/*.read',
+        scope: 'launch/patient patient/*.read launch/observation observation/*.read',
         redirectUri: 'index.html',
         iss: 'https://r4.smarthealthit.org',
       });
