@@ -1,126 +1,166 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <link rel='stylesheet' type='text/css' href='./src/css/example-smart-app.css'>
-    <title>Example-SMART-App</title>
-  </head>
-  <body>
-    <div id='errors'></div>
-    <div id="loading" class="spinner">
-      <div class="bounce1"></div>
-      <div class="bounce2"></div>
-      <div class="bounce3"></div>
-    </div>
-    <div id='holder'>
-      <h2>Example-SMART-App</h2>
-
-      <h2>Patient Resource</h2>
-      <table>
-        <tr>
-          <th>First Name:</th>
-          <td id='fname'></td>
-        </tr>
-        <tr>
-          <th>Last Name:</th>
-          <td id='lname'></td>
-        </tr>
-        <tr>
-          <th>Gender:</th>
-          <td id='gender'></td>
-        </tr>
-        <tr>
-          <th>Date of Birth:</th>
-          <td id='birthdate'></td>
-        </tr>
-      </table>
-      <h2>Observation Resource</h2>
-      <table>
-        <tr>
-          <th>Height:</th>
-          <td id='height'></td>
-        </tr>
-        <tr>
-          <th>Systolic Blood Pressure:</th>
-          <td id='systolicbp'></td>
-        </tr>
-        <tr>
-          <th>Diastolic Blood Pressure:</th>
-          <td id='diastolicbp'></td>
-        </tr>
-        <tr>
-          <th>LDL:</th>
-          <td id='ldl'></td>
-        </tr>
-        <tr>
-          <th>HDL:</th>
-          <td id='hdl'></td>
-        </tr>
-      </table>
-    </div>
-
-    <!-- Include FHIR Client JS Library from CDN -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMART on FHIR App - Patient Growth Charts</title>
     <script src="https://cdn.jsdelivr.net/npm/fhirclient/build/fhir-client.js"></script>
-
-    <!-- Application-level JavaScript -->
-    <script src='./src/js/example-smart-app.js'></script>
-
-    <!-- jQuery for convenience -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
-    
-    <script>
-      // Function to extract data
-      async function extractData() {
-        try {
-          const client = await FHIR.oauth2.ready({
-            serverUrl: 'https://r4.smarthealthit.org'
-          });
-          const patient = await client.request("Patient");
-          const observation = await client.request("Observation?patient=" + patient.id);
-
-          return { patient, observation };
-        } catch (error) {
-          console.error("Error calling FHIR service:", error);
-          throw new Error("Failed to call FHIR Service");
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.0/dist/chartjs-adapter-moment.min.js"></script>
+    <style>
+        .chart-container {
+            width: 80%;
+            margin: 20px auto;
         }
-      }
+    </style>
+</head>
+<body>
+<h1>Patient Growth Charts</h1>
+<div id="patient-info"></div>
+<div id="error-info" style="color: red;"></div>
+<div class="chart-container">
+    <canvas id="heightChart"></canvas>
+</div>
+<div class="chart-container">
+    <canvas id="weightChart"></canvas>
+</div>
 
-      // Function to draw visualization
-      function drawVisualization(p) {
-        const patient = p.patient;
-        const observation = p.observation;
+<script>
+    const patientInfo = document.getElementById('patient-info');
+    const errorInfo = document.getElementById('error-info');
 
-        $('#fname').text(patient.name[0].given.join(" "));
-        $('#lname').text(patient.name[0].family);
-        $('#gender').text(patient.gender);
-        $('#birthdate').text(patient.birthDate);
+    FHIR.oauth2.ready()
+        .then(client => {
+            console.log("FHIR client initialized:", client);
+            return Promise.all([
+                client.patient.read(),
+                client.request(`Observation?patient=${client.patient.id}&code=http://loinc.org|8302-2,http://loinc.org|29463-7&_sort=date`)
+            ]);
+        })
+        .then(([patient, observations]) => {
+            console.log("Patient data received:", patient);
+            console.log("Observations received:", observations);
 
-        const height = observation.entry.find(entry => entry.resource.code.coding[0].code === "8302-2");
-        const systolicbp = observation.entry.find(entry => entry.resource.code.coding[0].code === "8480-6");
-        const diastolicbp = observation.entry.find(entry => entry.resource.code.coding[0].code === "8462-4");
-        const ldl = observation.entry.find(entry => entry.resource.code.coding[0].code === "18262-6");
-        const hdl = observation.entry.find(entry => entry.resource.code.coding[0].code === "2085-9");
+            patientInfo.innerHTML = `
+                    <h2>Patient Information</h2>
+                    <p>Name: ${patient.name[0].given.join(' ')} ${patient.name[0].family}</p>
+                    <p>Gender: ${patient.gender}</p>
+                    <p>Birth Date: ${patient.birthDate}</p>
+                `;
 
-        $('#height').text(height ? height.resource.valueQuantity.value : "N/A");
-        $('#systolicbp').text(systolicbp ? systolicbp.resource.component[0].valueQuantity.value : "N/A");
-        $('#diastolicbp').text(diastolicbp ? diastolicbp.resource.component[1].valueQuantity.value : "N/A");
-        $('#ldl').text(ldl ? ldl.resource.valueQuantity.value : "N/A");
-        $('#hdl').text(hdl ? hdl.resource.valueQuantity.value : "N/A");
+            const heightData = [];
+            const weightData = [];
 
-        $('#loading').hide();
-      }
+            observations.entry.forEach(entry => {
+                const resource = entry.resource;
+                const date = moment(resource.effectiveDateTime);
+                const value = resource.valueQuantity.value;
+                const code = resource.code.coding[0].code;
 
-      // Call extractData and handle success/failure
-      extractData().then(
-        function(p) {
-          drawVisualization(p);
-        },
-        function() {
-          $('#loading').hide();
-          $('#errors').html('<p>Failed to call FHIR Service</p>');
-        }
-      );
-    </script>
-  </body>
+                if (code === '8302-2') { // Height
+                    heightData.push({x: date, y: value});
+                } else if (code === '29463-7') { // Weight
+                    weightData.push({x: date, y: value});
+                }
+            });
+
+            createHeightChart(heightData);
+            createWeightChart(weightData);
+        })
+        .catch(error => {
+            console.error("Error occurred:", error);
+            errorInfo.innerHTML = `<p>Error: ${error.message}</p>`;
+            if (error.stack) {
+                errorInfo.innerHTML += `<pre>${error.stack}</pre>`;
+            }
+        });
+
+    function createHeightChart(heightData) {
+        const ctx = document.getElementById('heightChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: [{
+                    label: 'Height (cm)',
+                    data: heightData,
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Patient Height Over Time'
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'month'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Height (cm)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function createWeightChart(weightData) {
+        const ctx = document.getElementById('weightChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: [{
+                    label: 'Weight (kg)',
+                    data: weightData,
+                    borderColor: 'rgb(255, 99, 132)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Patient Weight Over Time'
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'month'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Weight (kg)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+</body>
 </html>
