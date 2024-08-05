@@ -1,29 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <link rel='stylesheet' type='text/css' href='./src/css/example-smart-app.css'>
-    <title>Example-SMART-App</title>
-  </head>
-  <body>
-    <!-- FHIR Client JS Library -->
-    <script src="https://cdn.jsdelivr.net/npm/fhirclient/build/fhir-client.js"></script>
-
-    <!-- Application-level JavaScript -->
-    <script>
-      FHIR.oauth2.authorize({
-        client_id: '91b5e9a1-d744-43ec-8d2a-07d41915e78a',
-        scope: 'launch/patient patient/*.read launch/observation observation/*.read',
-        redirectUri: 'index.html',
-        iss: 'https://r4.smarthealthit.org',
-      });
-    </script>
-
-    <div class="spinner">
-      <div class="bounce1"></div>
-      <div class="bounce2"></div>
-      <div class="bounce3"></div>
-    </div>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SMART on FHIR Launch</title>
+  <script src="https://cdn.jsdelivr.net/npm/fhirclient/build/fhir-client.js"></script>
+</head>
+<body>
+<h1>Launching SMART on FHIR App</h1>
+<script>
+  FHIR.oauth2.authorize({
+    clientId: '3b86e2b5-0147-49c8-9b20-03653a3bb32d',
+    scope: 'launch/patient patient/*.read',
+    redirectUri: 'https://KeerthikaSunchu.github.io/SmartLiver/index.html',
+    iss: 'https://r4.smarthealthit.org',
+    completeInTarget: true
+  });
+</script>
+</body>
 </html>
