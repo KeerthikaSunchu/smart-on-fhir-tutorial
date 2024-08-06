@@ -5,14 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SMART on FHIR Launch</title>
   <script src="https://cdn.jsdelivr.net/npm/fhirclient/build/fhir-client.js"></script>
+  <script src='./lib/js/fhir-client-cerner-additions-1.0.0.js'></script>
 </head>
 <body>
 <h1>Launching SMART on FHIR App</h1>
 <script>
   FHIR.oauth2.authorize({
-    clientId: '3b86e2b5-0147-49c8-9b20-03653a3bb32d',
-    scope: 'launch/patient patient/*.read observation/*.read',
-    redirectUri: 'https://KeerthikaSunchu.github.io/smart-on-fhir-tutorial/example-smart-app/',
+    clientId: 'SmartLiver',
+    scope: 'launch/patient patient/*.read',
+    redirectUri: 'index.html',
     iss: 'https://r4.smarthealthit.org',
     completeInTarget: true
   });
